@@ -52,6 +52,38 @@ const createRefreshToken = async (userId, expiresInDays = 7) => {
   return token;
 };
 
+const findOrCreateGoogleUser = async ({ googleId, email, name, photo }) => {
+  if (!googleId || !email) {
+    throw new AppError('Google account data is incomplete', 400);
+  }
+
+  const normalizedEmail = email.toLowerCase();
+  const existingUser = await User.findOne({ email: normalizedEmail });
+
+  if (existingUser) {
+    existingUser.googleId = googleId;
+    existingUser.authProvider = 'google';
+    existingUser.name = name || existingUser.name;
+    existingUser.photo = photo || existingUser.photo;
+
+    if (!existingUser.password) {
+      existingUser.password = crypto.randomBytes(24).toString('hex');
+    }
+
+    await existingUser.save();
+    return existingUser;
+  }
+
+  return User.create({
+    name: name || normalizedEmail.split('@')[0],
+    email: normalizedEmail,
+    password: crypto.randomBytes(24).toString('hex'),
+    photo: photo || '',
+    googleId,
+    authProvider: 'google',
+  });
+};
+
 const rotateRefreshToken = async (oldToken, userId) => {
   if (oldToken) await RefreshToken.deleteOne({ token: oldToken, user: userId });
   return createRefreshToken(userId);
@@ -71,6 +103,7 @@ module.exports = {
   registerUser,
   loginUser,
   createRefreshToken,
+  findOrCreateGoogleUser,
   verifyRefreshToken,
   rotateRefreshToken,
 };

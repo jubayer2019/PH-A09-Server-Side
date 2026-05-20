@@ -1,7 +1,13 @@
 const asyncHandler = require('../utils/asyncHandler');
-const { registerUser, loginUser, createRefreshToken, verifyRefreshToken, rotateRefreshToken } = require('../services/authService');
+const crypto = require('crypto');
+const { registerUser, loginUser, createRefreshToken, findOrCreateGoogleUser, verifyRefreshToken, rotateRefreshToken } = require('../services/authService');
 const { signJwt, cookieOptions } = require('../utils/jwt');
 const env = require('../config/env');
+const AppError = require('../utils/AppError');
+
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
 
 const attachAuthCookie = (res, userId) => {
   const token = signJwt({ sub: userId });
@@ -17,6 +23,22 @@ const attachRefreshCookie = (res, refreshToken) => {
     ...cookieOptions,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
+};
+
+const attachOAuthStateCookie = (res, state) => {
+  res.cookie(`${env.cookieName}_oauth_state`, state, {
+    ...cookieOptions,
+    httpOnly: true,
+    maxAge: 10 * 60 * 1000,
+  });
+};
+
+const clearOAuthStateCookie = (res) => {
+  res.clearCookie(`${env.cookieName}_oauth_state`, cookieOptions);
+};
+
+const getGoogleRedirectUri = (req) => {
+  return process.env.GOOGLE_REDIRECT_URI || `${env.clientUrl}/api/auth/google/callback`;
 };
 
 const register = asyncHandler(async (req, res) => {
@@ -87,10 +109,89 @@ const refresh = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: user, token: authToken });
 });
 
+const googleStart = asyncHandler(async (req, res) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    throw new AppError('Google login is not configured on the server', 500);
+  }
+
+  const state = crypto.randomBytes(16).toString('hex');
+  const redirectUri = getGoogleRedirectUri(req);
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: 'openid email profile',
+    prompt: 'select_account',
+    access_type: 'offline',
+    state,
+  });
+
+  attachOAuthStateCookie(res, state);
+  res.redirect(`${GOOGLE_AUTH_URL}?${params.toString()}`);
+});
+
+const googleCallback = asyncHandler(async (req, res) => {
+  const { code, state } = req.query;
+  const savedState = req.cookies[`${env.cookieName}_oauth_state`];
+
+  if (!code) {
+    throw new AppError('Missing Google authorization code', 400);
+  }
+
+  if (!state || !savedState || state !== savedState) {
+    throw new AppError('Invalid Google sign-in state', 400);
+  }
+
+  const redirectUri = getGoogleRedirectUri(req);
+
+  const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    }),
+  });
+
+  if (!tokenResponse.ok) {
+    throw new AppError('Failed to exchange Google authorization code', 401);
+  }
+
+  const tokenData = await tokenResponse.json();
+  const userInfoResponse = await fetch(GOOGLE_USERINFO_URL, {
+    headers: { Authorization: `Bearer ${tokenData.access_token}` },
+  });
+
+  if (!userInfoResponse.ok) {
+    throw new AppError('Failed to read Google profile', 401);
+  }
+
+  const googleProfile = await userInfoResponse.json();
+  const user = await findOrCreateGoogleUser({
+    googleId: googleProfile.sub,
+    email: googleProfile.email,
+    name: googleProfile.name,
+    photo: googleProfile.picture,
+  });
+
+  const refreshToken = await createRefreshToken(user._id.toString());
+  const authToken = attachAuthCookie(res, user._id.toString());
+  attachRefreshCookie(res, refreshToken);
+  clearOAuthStateCookie(res);
+
+  const clientUrl = (env.clientUrl || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+  res.redirect(clientUrl);
+});
+
 module.exports = {
   register,
   login,
   me,
   logout,
   refresh,
+  googleStart,
+  googleCallback,
 };
