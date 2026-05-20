@@ -9,15 +9,10 @@ const verifyJwt = (token) => {
   return jwt.verify(token, env.jwtSecret);
 };
 
-const normalizedClientUrl = typeof env.clientUrl === 'string' ? env.clientUrl.replace(/\/$/, '') : '';
-const isLocalClient = normalizedClientUrl
-  ? /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalizedClientUrl)
-  : process.env.NODE_ENV !== 'production';
-
 const cookieOptions = {
   httpOnly: true,
-  secure: !isLocalClient,
-  sameSite: isLocalClient ? 'lax' : 'none',
+  secure: env.nodeEnv === 'production',
+  sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
   path: '/',
 };
 

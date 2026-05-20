@@ -4,6 +4,7 @@ dotenv.config();
 
 const required = [
   'NODE_ENV',
+  'PORT',
   'MONGODB_URI',
   'CLIENT_URL',
   'JWT_SECRET',
@@ -11,15 +12,15 @@ const required = [
   'COOKIE_NAME',
 ];
 
-const missing = required.filter((key) => !process.env[key]);
-
-if (missing.length > 0 && !process.env.VERCEL) {
-  throw new Error(`Missing required env variable(s): ${missing.join(', ')}`);
+for (const key of required) {
+  if (!process.env[key]) {
+    throw new Error(`Missing required env variable: ${key}`);
+  }
 }
 
 module.exports = {
   nodeEnv: process.env.NODE_ENV,
-  port: Number(process.env.PORT || 5000),
+  port: Number(process.env.PORT),
   mongodbUri: process.env.MONGODB_URI,
   clientUrl: process.env.CLIENT_URL,
   jwtSecret: process.env.JWT_SECRET,

@@ -10,7 +10,5 @@ router.post('/login', validate(authLoginSchema), authController.login);
 router.post('/logout', authController.logout);
 router.post('/refresh', authController.refresh);
 router.get('/me', requireAuth, authController.me);
-router.get('/google', authController.googleStart);
-router.get('/google/callback', authController.googleCallback);
 
 module.exports = router;
