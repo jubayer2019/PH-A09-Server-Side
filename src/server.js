@@ -59,6 +59,14 @@ app.use(
   })
 );
 
+// Prevent caching of API responses - ensures fresh data from MongoDB
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ success: true, message: 'DriveFleet API is healthy' });
 });

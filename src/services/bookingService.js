@@ -5,6 +5,7 @@ const AppError = require('../utils/AppError');
 const createBooking = async ({ userId, carId, bookingDate, driverNeeded, specialNote }) => {
   const car = await Car.findById(carId);
   if (!car) throw new AppError('Car not found', 404);
+  if (!car.availability) throw new AppError('This car is not available for booking', 400);
 
   const totalPrice = car.dailyRentPrice + (driverNeeded ? 45 : 0);
 
