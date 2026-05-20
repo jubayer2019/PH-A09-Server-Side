@@ -11,10 +11,10 @@ const required = [
   'COOKIE_NAME',
 ];
 
-for (const key of required) {
-  if (!process.env[key]) {
-    throw new Error(`Missing required env variable: ${key}`);
-  }
+const missing = required.filter((key) => !process.env[key]);
+
+if (missing.length > 0 && !process.env.VERCEL) {
+  throw new Error(`Missing required env variable(s): ${missing.join(', ')}`);
 }
 
 module.exports = {
