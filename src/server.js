@@ -16,34 +16,9 @@ const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
-const allowedOrigins = new Set(
-  [
-    env.clientUrl,
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-  ]
-    .filter(Boolean)
-    .map((origin) => origin.replace(/\/$/, ''))
-);
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      const normalizedOrigin = origin.replace(/\/$/, '');
-      const isVercelOrigin = /^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.vercel\.app$/i.test(normalizedOrigin);
-
-      if (allowedOrigins.has(normalizedOrigin) || isVercelOrigin) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
+    origin: env.clientUrl,
     credentials: true,
   })
 );
@@ -74,12 +49,10 @@ app.use(errorHandler);
 const start = async () => {
   try {
     await connectDB();
-    if (process.env.VERCEL !== '1') {
-      app.listen(env.port, () => {
-        // eslint-disable-next-line no-console
-        console.log(`DriveFleet server running on port ${env.port}`);
-      });
-    }
+    app.listen(env.port, () => {
+      // eslint-disable-next-line no-console
+      console.log(`DriveFleet server running on port ${env.port}`);
+    });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Failed to start server', error);
@@ -87,15 +60,4 @@ const start = async () => {
   }
 };
 
-if (process.env.VERCEL === '1') {
-  connectDB().catch((error) => {
-    // eslint-disable-next-line no-console
-    console.error('Failed to connect to database in Vercel runtime', error);
-  });
-}
-
-if (process.env.VERCEL !== '1') {
-  start();
-}
-
-module.exports = app;
+start();
