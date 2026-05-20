@@ -4,7 +4,6 @@ dotenv.config();
 
 const required = [
   'NODE_ENV',
-  'PORT',
   'MONGODB_URI',
   'CLIENT_URL',
   'JWT_SECRET',
@@ -20,7 +19,7 @@ for (const key of required) {
 
 module.exports = {
   nodeEnv: process.env.NODE_ENV,
-  port: Number(process.env.PORT),
+  port: Number(process.env.PORT || 5000),
   mongodbUri: process.env.MONGODB_URI,
   clientUrl: process.env.CLIENT_URL,
   jwtSecret: process.env.JWT_SECRET,
