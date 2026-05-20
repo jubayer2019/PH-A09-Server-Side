@@ -74,10 +74,12 @@ app.use(errorHandler);
 const start = async () => {
   try {
     await connectDB();
-    app.listen(env.port, () => {
-      // eslint-disable-next-line no-console
-      console.log(`DriveFleet server running on port ${env.port}`);
-    });
+    if (process.env.VERCEL !== '1') {
+      app.listen(env.port, () => {
+        // eslint-disable-next-line no-console
+        console.log(`DriveFleet server running on port ${env.port}`);
+      });
+    }
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Failed to start server', error);
@@ -85,4 +87,15 @@ const start = async () => {
   }
 };
 
-start();
+if (process.env.VERCEL === '1') {
+  connectDB().catch((error) => {
+    // eslint-disable-next-line no-console
+    console.error('Failed to connect to database in Vercel runtime', error);
+  });
+}
+
+if (process.env.VERCEL !== '1') {
+  start();
+}
+
+module.exports = app;
