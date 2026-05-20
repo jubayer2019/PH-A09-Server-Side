@@ -61,9 +61,11 @@ app.use(
 
 // Prevent caching of API responses - ensures fresh data from MongoDB
 app.use('/api', (req, res, next) => {
-  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
+  res.set('ETag', 'invalid');
+  res.set('Surrogate-Control', 'no-cache');
   next();
 });
 
