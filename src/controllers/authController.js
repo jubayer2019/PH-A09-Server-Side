@@ -38,7 +38,8 @@ const clearOAuthStateCookie = (res) => {
 };
 
 const getGoogleRedirectUri = (req) => {
-  return process.env.GOOGLE_REDIRECT_URI || `${env.clientUrl}/api/auth/google/callback`;
+  const serverUrl = process.env.SERVER_URL || `${req.protocol}://${req.get('host')}`;
+  return `${serverUrl.replace(/\/$/, '')}/api/auth/google/callback`;
 };
 
 const register = asyncHandler(async (req, res) => {

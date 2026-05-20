@@ -13,6 +13,8 @@ services:
         value: 10000
       - key: CLIENT_URL
         sync: false
+      - key: SERVER_URL
+        sync: false
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
@@ -21,11 +23,11 @@ services:
         value: 7d
       - key: COOKIE_NAME
         value: drivefleet_token
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
-        sync: false
-      - key: GOOGLE_REDIRECT_URI
         sync: false
       - key: FIREBASE_PROJECT_ID
         sync: false
