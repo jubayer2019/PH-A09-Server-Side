@@ -16,6 +16,8 @@ const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
+const normalizeOrigin = (value) => (typeof value === 'string' ? value.replace(/\/$/, '') : '');
+
 const allowedOrigins = new Set(
   [
     env.clientUrl,
@@ -35,11 +37,11 @@ app.use(
         return callback(null, true);
       }
 
-      const normalizedOrigin = origin.replace(/\/$/, '');
+      const normalizedOrigin = normalizeOrigin(origin);
       const isVercelOrigin = /^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.vercel\.app$/i.test(normalizedOrigin);
 
       if (allowedOrigins.has(normalizedOrigin) || isVercelOrigin) {
-        return callback(null, true);
+        return callback(null, normalizedOrigin);
       }
 
       return callback(new Error(`CORS blocked for origin: ${origin}`));
