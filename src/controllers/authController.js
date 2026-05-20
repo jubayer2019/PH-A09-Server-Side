@@ -178,7 +178,7 @@ const googleCallback = asyncHandler(async (req, res) => {
   attachRefreshCookie(res, refreshToken);
   clearOAuthStateCookie(res);
 
-  const clientUrl = env.clientUrl.replace(/\/$/, '');
+  const clientUrl = (env.clientUrl || requestOrigin).replace(/\/$/, '');
   res.redirect(`${clientUrl}/login?google=success`);
 });
 

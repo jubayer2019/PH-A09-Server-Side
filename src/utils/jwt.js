@@ -9,7 +9,10 @@ const verifyJwt = (token) => {
   return jwt.verify(token, env.jwtSecret);
 };
 
-const isLocalClient = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(env.clientUrl.replace(/\/$/, ''));
+const normalizedClientUrl = typeof env.clientUrl === 'string' ? env.clientUrl.replace(/\/$/, '') : '';
+const isLocalClient = normalizedClientUrl
+  ? /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalizedClientUrl)
+  : process.env.NODE_ENV !== 'production';
 
 const cookieOptions = {
   httpOnly: true,
