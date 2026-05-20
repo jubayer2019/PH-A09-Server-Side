@@ -106,7 +106,8 @@ const googleStart = asyncHandler(async (req, res) => {
   }
 
   const state = crypto.randomBytes(16).toString('hex');
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${process.env.CLIENT_URL.replace(/\/$/, '')}/api/auth/google/callback`;
+  const requestOrigin = `${req.protocol}://${req.get('host')}`.replace(/\/$/, '');
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${requestOrigin}/api/auth/google/callback`;
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -133,7 +134,8 @@ const googleCallback = asyncHandler(async (req, res) => {
     throw new AppError('Invalid Google sign-in state', 400);
   }
 
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${process.env.CLIENT_URL.replace(/\/$/, '')}/api/auth/google/callback`;
+  const requestOrigin = `${req.protocol}://${req.get('host')}`.replace(/\/$/, '');
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${requestOrigin}/api/auth/google/callback`;
 
   const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
     method: 'POST',
