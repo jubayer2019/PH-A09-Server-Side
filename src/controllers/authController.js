@@ -1,4 +1,5 @@
 const asyncHandler = require('../utils/asyncHandler');
+const crypto = require('crypto');
 const { registerUser, loginUser, findOrCreateGoogleUser, createRefreshToken, verifyRefreshToken, rotateRefreshToken } = require('../services/authService');
 const { signJwt, cookieOptions } = require('../utils/jwt');
 const env = require('../config/env');
