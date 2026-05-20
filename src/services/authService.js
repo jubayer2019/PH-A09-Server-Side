@@ -70,4 +70,7 @@ const verifyRefreshToken = async (token) => {
 module.exports = {
   registerUser,
   loginUser,
+  createRefreshToken,
+  verifyRefreshToken,
+  rotateRefreshToken,
 };
