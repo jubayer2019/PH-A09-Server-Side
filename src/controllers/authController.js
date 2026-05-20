@@ -9,6 +9,7 @@ const attachAuthCookie = (res, userId) => {
     ...cookieOptions,
     maxAge: 15 * 60 * 1000,
   });
+  return token;
 };
 
 const attachRefreshCookie = (res, refreshToken) => {
@@ -23,13 +24,14 @@ const register = asyncHandler(async (req, res) => {
   const user = await registerUser({ name, email, password, photo });
 
   const refreshToken = await createRefreshToken(user._id.toString());
-  attachAuthCookie(res, user._id.toString());
+  const authToken = attachAuthCookie(res, user._id.toString());
   attachRefreshCookie(res, refreshToken);
 
   res.status(201).json({
     success: true,
     message: 'Registration successful',
     data: user,
+    token: authToken,
   });
 });
 
@@ -38,22 +40,24 @@ const login = asyncHandler(async (req, res) => {
   const user = await loginUser({ email, password });
 
   const refreshToken = await createRefreshToken(user._id.toString());
-  attachAuthCookie(res, user._id.toString());
+  const authToken = attachAuthCookie(res, user._id.toString());
   attachRefreshCookie(res, refreshToken);
 
   res.status(200).json({
     success: true,
     message: 'Login successful',
     data: user,
+    token: authToken,
   });
 });
 
 const me = asyncHandler(async (req, res) => {
-  attachAuthCookie(res, req.user.id);
+  const authToken = attachAuthCookie(res, req.user.id);
 
   res.status(200).json({
     success: true,
     data: req.user,
+    token: authToken,
   });
 });
 
@@ -77,10 +81,10 @@ const refresh = asyncHandler(async (req, res) => {
   // rotate
   const newRefresh = await rotateRefreshToken(refreshToken, user._id.toString());
 
-  attachAuthCookie(res, user._id.toString());
+  const authToken = attachAuthCookie(res, user._id.toString());
   attachRefreshCookie(res, newRefresh);
 
-  res.status(200).json({ success: true, data: user });
+  res.status(200).json({ success: true, data: user, token: authToken });
 });
 
 module.exports = {

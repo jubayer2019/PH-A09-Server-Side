@@ -5,7 +5,10 @@ const { verifyJwt } = require('../utils/jwt');
 const env = require('../config/env');
 
 const requireAuth = asyncHandler(async (req, res, next) => {
-  const token = req.cookies?.[env.cookieName];
+  const bearerToken = req.get('authorization')?.startsWith('Bearer ')
+    ? req.get('authorization').slice(7)
+    : null;
+  const token = bearerToken || req.cookies?.[env.cookieName];
 
   if (!token) {
     throw new AppError('Unauthorized access', 401);
