@@ -38,8 +38,17 @@ const clearOAuthStateCookie = (res) => {
 };
 
 const getGoogleRedirectUri = (req) => {
-  const serverUrl = process.env.SERVER_URL || `${req.protocol}://${req.get('host')}`;
-  return `${serverUrl.replace(/\/$/, '')}/api/auth/google/callback`;
+  if (process.env.GOOGLE_REDIRECT_URI) {
+    return process.env.GOOGLE_REDIRECT_URI;
+  }
+
+  const forwardedProto = req.get('x-forwarded-proto');
+  const protocol = forwardedProto ? forwardedProto.split(',')[0].trim() : 'https';
+  const host = process.env.SERVER_URL
+    ? new URL(process.env.SERVER_URL).host
+    : req.get('host');
+
+  return `${protocol}://${host}/api/auth/google/callback`;
 };
 
 const register = asyncHandler(async (req, res) => {
@@ -184,7 +193,10 @@ const googleCallback = asyncHandler(async (req, res) => {
   clearOAuthStateCookie(res);
 
   const clientUrl = (env.clientUrl || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
-  res.redirect(clientUrl);
+  const redirectUrl = new URL(clientUrl);
+  redirectUrl.searchParams.set('token', authToken);
+
+  res.redirect(redirectUrl.toString());
 });
 
 module.exports = {
