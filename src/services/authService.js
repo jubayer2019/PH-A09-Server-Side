@@ -36,10 +36,48 @@ const loginUser = async ({ email, password }) => {
     throw new AppError('Invalid email or password', 401);
   }
 
+  if (!user.password) {
+    throw new AppError('This account uses Google sign-in. Please login with Google.', 401);
+  }
+
   const isPasswordValid = await argon2.verify(user.password, password);
   if (!isPasswordValid) {
     throw new AppError('Invalid email or password', 401);
   }
+
+  return user;
+};
+
+const findOrCreateGoogleUser = async ({ googleId, email, name, photo }) => {
+  if (!googleId || !email) {
+    throw new AppError('Google account data is incomplete', 400);
+  }
+
+  const normalizedEmail = email.toLowerCase();
+  const existingUser = await User.findOne({ email: normalizedEmail });
+
+  if (existingUser) {
+    existingUser.googleId = googleId;
+    existingUser.authProvider = 'google';
+    existingUser.name = name || existingUser.name;
+    existingUser.photo = photo || existingUser.photo;
+
+    if (!existingUser.password) {
+      existingUser.password = crypto.randomBytes(24).toString('hex');
+    }
+
+    await existingUser.save();
+    return existingUser;
+  }
+
+  const user = await User.create({
+    name: name || normalizedEmail.split('@')[0],
+    email: normalizedEmail,
+    password: crypto.randomBytes(24).toString('hex'),
+    photo: photo || '',
+    googleId,
+    authProvider: 'google',
+  });
 
   return user;
 };
@@ -70,4 +108,8 @@ const verifyRefreshToken = async (token) => {
 module.exports = {
   registerUser,
   loginUser,
+  findOrCreateGoogleUser,
+  createRefreshToken,
+  verifyRefreshToken,
+  rotateRefreshToken,
 };

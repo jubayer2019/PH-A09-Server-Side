@@ -9,10 +9,12 @@ const verifyJwt = (token) => {
   return jwt.verify(token, env.jwtSecret);
 };
 
+const isLocalClient = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(env.clientUrl.replace(/\/$/, ''));
+
 const cookieOptions = {
   httpOnly: true,
-  secure: env.nodeEnv === 'production',
-  sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
+  secure: !isLocalClient,
+  sameSite: isLocalClient ? 'lax' : 'none',
   path: '/',
 };
 
